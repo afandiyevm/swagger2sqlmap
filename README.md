@@ -1,4 +1,5 @@
 # Swagger2Sqlmap
+<img width="979" height="675" alt="swagger2sqlmap 19 39 23" src="https://github.com/user-attachments/assets/74724903-559c-4b43-be49-7ab27c30df35" />
 
 **Swagger2Sqlmap** is a Burp Suite extension designed specifically to **generate sqlmap-ready requests from Swagger / OpenAPI specifications**.
 
