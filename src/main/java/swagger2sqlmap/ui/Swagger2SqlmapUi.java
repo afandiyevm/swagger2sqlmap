@@ -277,7 +277,7 @@ public class Swagger2SqlmapUi {
     JPanel wrapper = new JPanel();
     wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
 
-    // Row 0: level / risk / threads (threads ALWAYS рядом)
+    // Row 0: level / risk / threads (threads рядом)
     JPanel row0 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
     row0.add(new JLabel("level:"));
     row0.add(levelSpinner);
@@ -300,7 +300,7 @@ public class Swagger2SqlmapUi {
     row2.add(new JLabel("Headers mode:"));
     row2.add(headersModeCombo);
 
-    // Row 3: tamper multi-select + custom
+    // Row 3: tamper multi-select + custom (button aligned to list left edge)
     JPanel row3 = new JPanel(new BorderLayout(10, 0));
     row3.add(new JLabel("Tamper (multi-select):"), BorderLayout.WEST);
 
@@ -310,18 +310,28 @@ public class Swagger2SqlmapUi {
 
     JScrollPane tamperScroll = new JScrollPane(tamperList);
     tamperScroll.setPreferredSize(new Dimension(260, 95));
+    tamperScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    JPanel tamperRight = new JPanel(new BorderLayout(8, 0));
-    tamperRight.add(tamperScroll, BorderLayout.CENTER);
+    // Right block uses same left alignment for scroll + button
+    JPanel tamperRight = new JPanel();
+    tamperRight.setLayout(new BoxLayout(tamperRight, BoxLayout.Y_AXIS));
+    tamperRight.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    JPanel tamperBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+    tamperRight.add(tamperScroll);
+    tamperRight.add(Box.createVerticalStrut(6));
+
+    JPanel tamperBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)); // no left gap
+    tamperBtns.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    addCustomTamperBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
     tamperBtns.add(addCustomTamperBtn);
 
+    tamperBtns.add(Box.createHorizontalStrut(10));
     JLabel tamperHint = new JLabel("Tip: Ctrl/Cmd-click to select multiple");
     tamperHint.setForeground(new Color(0x666666));
     tamperBtns.add(tamperHint);
 
-    tamperRight.add(tamperBtns, BorderLayout.SOUTH);
+    tamperRight.add(tamperBtns);
 
     row3.add(tamperRight, BorderLayout.CENTER);
 
@@ -388,7 +398,7 @@ public class Swagger2SqlmapUi {
     aboutText.setFont(new Font("SansSerif", Font.PLAIN, 13));
 
     aboutText.setText("""
-Swagger2Sqlmap is a Burp Suite extension designed to bridge the gap between OpenAPI / Swagger specifications and advanced SQL injection testing with sqlmap during Graybox assessments.
+Swagger2Sqlmap is a Burp Suite extension designed to bridge the gap between OpenAPI / Swagger specifications and advanced SQL injection testing with sqlmap.
 
 The extension allows security testers and red teamers to:
 • Load Swagger / OpenAPI files
@@ -417,14 +427,11 @@ https://github.com/afandiyevm/Swagger2Sqlmap
   }
 
   private void initTamperDefaults() {
-    // baseline choices
     tamperModel.addElement("apostrophemask");
     tamperModel.addElement("between");
     tamperModel.addElement("space2comment");
     tamperModel.addElement("randomcase");
     tamperModel.addElement("charunicodeencode");
-
-    // default: none selected
     tamperList.clearSelection();
   }
 
@@ -442,12 +449,10 @@ https://github.com/afandiyevm/Swagger2Sqlmap
   // ================= Wiring =================
 
   private void wire() {
-    // Filters
     Runnable apply = this::applyFilters;
     searchField.getDocument().addDocumentListener((SimpleDocumentListener) ev -> apply.run());
     methodFilter.addActionListener(e -> apply.run());
 
-    // ✅ Add custom tamper
     addCustomTamperBtn.addActionListener(e -> {
       String input = JOptionPane.showInputDialog(
           root,
@@ -460,31 +465,27 @@ https://github.com/afandiyevm/Swagger2Sqlmap
       input = input.trim();
       if (input.isEmpty()) return;
 
-      // if exists -> select it
       for (int i = 0; i < tamperModel.getSize(); i++) {
         String v = tamperModel.getElementAt(i);
         if (input.equalsIgnoreCase(v)) {
-          tamperList.setSelectedIndex(i);
+          tamperList.addSelectionInterval(i, i);
           return;
         }
       }
 
-      // add new, select it (keep previous selections too)
       int oldSize = tamperModel.getSize();
       tamperModel.addElement(input);
 
-      // keep existing selection
+      // keep existing selection + select new
       List<Integer> selected = new ArrayList<>();
       for (int idx : tamperList.getSelectedIndices()) selected.add(idx);
 
-      // select new item + keep old
       tamperList.setSelectedIndex(oldSize);
       for (Integer idx : selected) {
         if (idx >= 0 && idx < oldSize) tamperList.addSelectionInterval(idx, idx);
       }
     });
 
-    // Row selection -> update request editor
     table.getSelectionModel().addListSelectionListener(e -> {
       if (e.getValueIsAdjusting()) return;
       EndpointRow r = getSelectedEndpointRow();
@@ -500,7 +501,6 @@ https://github.com/afandiyevm/Swagger2Sqlmap
       }
     });
 
-    // Right-click menu: Send to Repeater/Intruder
     table.addMouseListener(new MouseAdapter() {
       @Override public void mousePressed(MouseEvent e) { maybeShow(e); }
       @Override public void mouseReleased(MouseEvent e) { maybeShow(e); }
@@ -534,7 +534,6 @@ https://github.com/afandiyevm/Swagger2Sqlmap
       }
     });
 
-    // Targets buttons
     loadSwaggerBtn.addActionListener(e -> chooseAndParseSwagger());
 
     loadIntoTableBtn.addActionListener(e -> {
@@ -551,21 +550,17 @@ https://github.com/afandiyevm/Swagger2Sqlmap
 
     clearTargetsBtn.addActionListener(e -> clearTargets());
 
-    // Authorization buttons
     insertFromClipboardBtn.addActionListener(e -> insertTokenFromClipboard());
     loadFromHistoryBtn.addActionListener(e -> loadTokenFromBurpHistory());
 
-    // Logs buttons
     clearLogsBtn.addActionListener(e -> {
       logArea.setText("");
       api.logging().logToOutput("Logs cleared");
     });
 
-    // Command builder buttons
     buildSqlmapBtn.addActionListener(e -> buildSqlmapCommandForSelected());
     copySqlmapBtn.addActionListener(e -> copySqlmapCommand());
 
-    // Export dropdown
     exportBtn.addActionListener(e -> showExportMenu(exportBtn));
   }
 
@@ -617,7 +612,6 @@ https://github.com/afandiyevm/Swagger2Sqlmap
   // ================= Command Builder =================
 
   private SqlmapCommandBuilder.Options currentSqlmapOptions() {
-    // join selected tampers with comma
     List<String> selected = tamperList.getSelectedValuesList();
     String tamper = null;
     if (selected != null && !selected.isEmpty()) {
