@@ -77,10 +77,19 @@ public final class SqlmapCommandBuilder {
       args.add("--threads");
       args.add(String.valueOf(opt.threads()));
     }
+
+    // ✅ force SSL
+    if (opt.forceSsl()) {
+      args.add("--force-ssl");
+    }
+
+    // tamper
     if (opt.tamper() != null && !opt.tamper().isBlank()) {
       args.add("--tamper");
       args.add(opt.tamper().trim());
     }
+
+    // technique
     if (opt.technique() != null && !opt.technique().isBlank()) {
       args.add("--technique");
       args.add(opt.technique().trim());
@@ -126,7 +135,7 @@ public final class SqlmapCommandBuilder {
         || n.equals("content-length")
         || n.equals("connection")
         || n.equals("accept-encoding")
-        || n.equals("user-agent")   
+        || n.equals("user-agent")
         || n.equals("proxy-connection");
   }
 
@@ -139,6 +148,7 @@ public final class SqlmapCommandBuilder {
         || n.startsWith("x-");
   }
 
+  @SuppressWarnings("unused")
   private static String headerValue(HttpRequest req, String headerName) {
     for (var h : req.headers()) {
       if (headerName.equalsIgnoreCase(h.name())) return safe(h.value()).trim();
@@ -189,7 +199,8 @@ public final class SqlmapCommandBuilder {
       Integer threads,
       String tamper,
       String technique,
-      String extraArgs
+      String extraArgs,
+      boolean forceSsl               // ✅ NEW FIELD
   ) {
     public enum HeadersMode { IMPORTANT_ONLY, ALL }
 
@@ -205,7 +216,8 @@ public final class SqlmapCommandBuilder {
           null,
           null,
           null,
-          ""
+          "",
+          false
       );
     }
   }

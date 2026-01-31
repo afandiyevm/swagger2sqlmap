@@ -15,7 +15,7 @@ public class EndpointsTableModel extends AbstractTableModel {
   private static final String[] COLS = {
       "Method",
       "Path",
-      "OperationId",
+      "Operation ID",
       "Summary",
       "Content-Type",
       "Has Body"

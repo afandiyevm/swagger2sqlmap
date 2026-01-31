@@ -18,6 +18,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -71,11 +72,19 @@ public class Swagger2SqlmapUi {
   private final JSpinner levelSpinner = new JSpinner(new SpinnerNumberModel(3, 1, 5, 1));
   private final JSpinner riskSpinner = new JSpinner(new SpinnerNumberModel(2, 1, 3, 1));
   private final JSpinner threadsSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 50, 1));
+
   private final JCheckBox batchCheck = new JCheckBox("--batch", true);
   private final JCheckBox randomAgentCheck = new JCheckBox("--random-agent", true);
+  private final JCheckBox forceSslCheck = new JCheckBox("--force-ssl", false);
+
   private final JCheckBox includeHeadersCheck = new JCheckBox("Include headers", true);
   private final JComboBox<String> headersModeCombo = new JComboBox<>(new String[]{"IMPORTANT_ONLY", "ALL"});
   private final JTextField extraArgsField = new JTextField();
+
+  // ========= Tamper (multi-select) =========
+  private final DefaultListModel<String> tamperModel = new DefaultListModel<>();
+  private final JList<String> tamperList = new JList<>(tamperModel);
+  private final JButton addCustomTamperBtn = new JButton("Add custom...");
 
   // ========= Logs tab =========
   private final JPanel logsRoot = new JPanel(new BorderLayout(8, 8));
@@ -100,6 +109,7 @@ public class Swagger2SqlmapUi {
         buildTargetsEditorBlock()
     );
 
+    initTamperDefaults();
     buildUi();
     applyDefaults();
     wire();
@@ -114,7 +124,6 @@ public class Swagger2SqlmapUi {
   private void buildUi() {
     root.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
-    // Order as you requested: Targets | Authorization | Command Builder | Logs | About
     tabs.addTab("Targets", targetsRoot);
     tabs.addTab("Authorization", authRoot);
     tabs.addTab("Command Builder", cmdRoot);
@@ -149,7 +158,7 @@ public class Swagger2SqlmapUi {
 
     // Row 0: swagger file
     c.gridx=0; c.gridy=0; c.weightx=0;
-    top.add(new JLabel("Swagger/OpenAPI JSON:"), c);
+    top.add(new JLabel("API Document:"), c);
 
     c.gridx=1; c.weightx=1;
     top.add(swaggerFileField, c);
@@ -168,9 +177,10 @@ public class Swagger2SqlmapUi {
 
     c.gridx=1; c.weightx=1; c.gridwidth=2;
     top.add(baseUrlField, c);
+    c.gridwidth=1;
 
     // Row 2: filters
-    c.gridx=0; c.gridy=2; c.weightx=0; c.gridwidth=1;
+    c.gridx=0; c.gridy=2; c.weightx=0;
     top.add(new JLabel("Search:"), c);
 
     c.gridx=1; c.weightx=1;
@@ -264,54 +274,73 @@ public class Swagger2SqlmapUi {
   }
 
   private JComponent buildCommandOptionsPanel() {
-    JPanel opts = new JPanel(new GridBagLayout());
-    GridBagConstraints c = new GridBagConstraints();
-    c.insets = new Insets(4,4,4,4);
-    c.fill = GridBagConstraints.HORIZONTAL;
+    JPanel wrapper = new JPanel();
+    wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
 
-    int y = 0;
+    // Row 0: level / risk / threads (threads ALWAYS рядом)
+    JPanel row0 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+    row0.add(new JLabel("level:"));
+    row0.add(levelSpinner);
 
-    c.gridx=0; c.gridy=y; c.weightx=0;
-    opts.add(new JLabel("level:"), c);
-    c.gridx=1; c.weightx=0;
-    opts.add(levelSpinner, c);
+    row0.add(new JLabel("risk:"));
+    row0.add(riskSpinner);
 
-    c.gridx=2; c.weightx=0;
-    opts.add(new JLabel("risk:"), c);
-    c.gridx=3; c.weightx=0;
-    opts.add(riskSpinner, c);
+    row0.add(new JLabel("threads:"));
+    row0.add(threadsSpinner);
 
-    c.gridx=4; c.weightx=0;
-    opts.add(new JLabel("threads:"), c);
-    c.gridx=5; c.weightx=0;
-    opts.add(threadsSpinner, c);
+    // Row 1: switches
+    JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+    row1.add(batchCheck);
+    row1.add(randomAgentCheck);
+    row1.add(forceSslCheck);
 
-    c.gridx=6; c.weightx=0;
-    opts.add(batchCheck, c);
-    c.gridx=7; c.weightx=0;
-    opts.add(randomAgentCheck, c);
+    // Row 2: headers mode
+    JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+    row2.add(includeHeadersCheck);
+    row2.add(new JLabel("Headers mode:"));
+    row2.add(headersModeCombo);
 
-    y++;
+    // Row 3: tamper multi-select + custom
+    JPanel row3 = new JPanel(new BorderLayout(10, 0));
+    row3.add(new JLabel("Tamper (multi-select):"), BorderLayout.WEST);
 
-    c.gridx=0; c.gridy=y; c.weightx=0;
-    opts.add(includeHeadersCheck, c);
+    tamperList.setVisibleRowCount(5);
+    tamperList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+    tamperList.setLayoutOrientation(JList.VERTICAL);
 
-    c.gridx=1; c.weightx=0;
-    opts.add(new JLabel("Headers mode:"), c);
+    JScrollPane tamperScroll = new JScrollPane(tamperList);
+    tamperScroll.setPreferredSize(new Dimension(260, 95));
 
-    c.gridx=2; c.weightx=0; c.gridwidth=2;
-    opts.add(headersModeCombo, c);
-    c.gridwidth=1;
+    JPanel tamperRight = new JPanel(new BorderLayout(8, 0));
+    tamperRight.add(tamperScroll, BorderLayout.CENTER);
 
-    y++;
+    JPanel tamperBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+    tamperBtns.add(addCustomTamperBtn);
 
-    c.gridx=0; c.gridy=y; c.weightx=0;
-    opts.add(new JLabel("Extra args:"), c);
+    JLabel tamperHint = new JLabel("Tip: Ctrl/Cmd-click to select multiple");
+    tamperHint.setForeground(new Color(0x666666));
+    tamperBtns.add(tamperHint);
 
-    c.gridx=1; c.weightx=1; c.gridwidth=7;
-    opts.add(extraArgsField, c);
+    tamperRight.add(tamperBtns, BorderLayout.SOUTH);
 
-    return opts;
+    row3.add(tamperRight, BorderLayout.CENTER);
+
+    // Row 4: extra args (fill)
+    JPanel row4 = new JPanel(new BorderLayout(10, 0));
+    row4.add(new JLabel("Extra args:"), BorderLayout.WEST);
+    row4.add(extraArgsField, BorderLayout.CENTER);
+
+    wrapper.add(row0);
+    wrapper.add(Box.createVerticalStrut(6));
+    wrapper.add(row1);
+    wrapper.add(Box.createVerticalStrut(6));
+    wrapper.add(row2);
+    wrapper.add(Box.createVerticalStrut(6));
+    wrapper.add(row3);
+    wrapper.add(Box.createVerticalStrut(6));
+    wrapper.add(row4);
+
+    return wrapper;
   }
 
   private JComponent buildCommandButtonsPanel() {
@@ -337,23 +366,21 @@ public class Swagger2SqlmapUi {
     aboutRoot.removeAll();
     aboutRoot.setLayout(new BorderLayout(10, 10));
 
-    // ================= TOP: Logo =================
     JLabel logoLabel = new JLabel();
     logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
     try {
-        ImageIcon icon = new ImageIcon(
-            getClass().getClassLoader().getResource("swagger2sqlmap.png")
-        );
-        logoLabel.setIcon(icon);
+      ImageIcon icon = new ImageIcon(
+          getClass().getClassLoader().getResource("swagger2sqlmap.png")
+      );
+      logoLabel.setIcon(icon);
     } catch (Exception ignored) {
-        logoLabel.setText("Swagger2Sqlmap");
-        logoLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
+      logoLabel.setText("Swagger2Sqlmap");
+      logoLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
     }
 
     aboutRoot.add(logoLabel, BorderLayout.NORTH);
 
-    // ================= CENTER: Text =================
     JTextArea aboutText = new JTextArea();
     aboutText.setEditable(false);
     aboutText.setLineWrap(true);
@@ -361,10 +388,10 @@ public class Swagger2SqlmapUi {
     aboutText.setFont(new Font("SansSerif", Font.PLAIN, 13));
 
     aboutText.setText("""
-Swagger2Sqlmap is a Burp Suite extension designed to bridge the gap between OpenAPI / Swagger specifications and advanced SQL injection testing with sqlmap.
+Swagger2Sqlmap is a Burp Suite extension designed to bridge the gap between OpenAPI / Swagger specifications and advanced SQL injection testing with sqlmap during Graybox assessments.
 
 The extension allows security testers and red teamers to:
-• Load Swagger / OpenAPI JSON files
+• Load Swagger / OpenAPI files
 • Automatically extract and normalize endpoints
 • Generate realistic HTTP requests (including body templates)
 • Send endpoints to Burp tools (Repeater, Intruder)
@@ -386,10 +413,20 @@ https://github.com/afandiyevm/Swagger2Sqlmap
 
     JScrollPane scroll = new JScrollPane(aboutText);
     scroll.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-
     aboutRoot.add(scroll, BorderLayout.CENTER);
-}
+  }
 
+  private void initTamperDefaults() {
+    // baseline choices
+    tamperModel.addElement("apostrophemask");
+    tamperModel.addElement("between");
+    tamperModel.addElement("space2comment");
+    tamperModel.addElement("randomcase");
+    tamperModel.addElement("charunicodeencode");
+
+    // default: none selected
+    tamperList.clearSelection();
+  }
 
   private void applyDefaults() {
     swaggerFileField.setEditable(false);
@@ -410,6 +447,43 @@ https://github.com/afandiyevm/Swagger2Sqlmap
     searchField.getDocument().addDocumentListener((SimpleDocumentListener) ev -> apply.run());
     methodFilter.addActionListener(e -> apply.run());
 
+    // ✅ Add custom tamper
+    addCustomTamperBtn.addActionListener(e -> {
+      String input = JOptionPane.showInputDialog(
+          root,
+          "Enter tamper script name (as in sqlmap --tamper):",
+          "Add custom tamper",
+          JOptionPane.QUESTION_MESSAGE
+      );
+
+      if (input == null) return;
+      input = input.trim();
+      if (input.isEmpty()) return;
+
+      // if exists -> select it
+      for (int i = 0; i < tamperModel.getSize(); i++) {
+        String v = tamperModel.getElementAt(i);
+        if (input.equalsIgnoreCase(v)) {
+          tamperList.setSelectedIndex(i);
+          return;
+        }
+      }
+
+      // add new, select it (keep previous selections too)
+      int oldSize = tamperModel.getSize();
+      tamperModel.addElement(input);
+
+      // keep existing selection
+      List<Integer> selected = new ArrayList<>();
+      for (int idx : tamperList.getSelectedIndices()) selected.add(idx);
+
+      // select new item + keep old
+      tamperList.setSelectedIndex(oldSize);
+      for (Integer idx : selected) {
+        if (idx >= 0 && idx < oldSize) tamperList.addSelectionInterval(idx, idx);
+      }
+    });
+
     // Row selection -> update request editor
     table.getSelectionModel().addListSelectionListener(e -> {
       if (e.getValueIsAdjusting()) return;
@@ -419,7 +493,6 @@ https://github.com/afandiyevm/Swagger2Sqlmap
       try {
         HttpRequest req = buildHttpRequest(r);
         requestEditor.setRequest(req);
-        // when selection changes, clear last built command
         sqlmapCommandArea.setText("");
       } catch (Exception ex) {
         setTargetsStatus("Failed to build request: " + ex.getMessage(), false);
@@ -544,6 +617,18 @@ https://github.com/afandiyevm/Swagger2Sqlmap
   // ================= Command Builder =================
 
   private SqlmapCommandBuilder.Options currentSqlmapOptions() {
+    // join selected tampers with comma
+    List<String> selected = tamperList.getSelectedValuesList();
+    String tamper = null;
+    if (selected != null && !selected.isEmpty()) {
+      List<String> cleaned = new ArrayList<>();
+      for (String s : selected) {
+        String t = safe(s).trim();
+        if (!t.isEmpty()) cleaned.add(t);
+      }
+      if (!cleaned.isEmpty()) tamper = String.join(",", cleaned);
+    }
+
     return new SqlmapCommandBuilder.Options(
         "sqlmap",
         includeHeadersCheck.isSelected(),
@@ -555,9 +640,10 @@ https://github.com/afandiyevm/Swagger2Sqlmap
         (Integer) levelSpinner.getValue(),
         (Integer) riskSpinner.getValue(),
         (Integer) threadsSpinner.getValue(),
+        tamper,
         null,
-        null,
-        safe(extraArgsField.getText())
+        safe(extraArgsField.getText()),
+        forceSslCheck.isSelected()
     );
   }
 
@@ -604,7 +690,6 @@ https://github.com/afandiyevm/Swagger2Sqlmap
     try {
       parsed = SwaggerParser.parse(selectedSwaggerFile);
 
-      // auto base url, but user can edit
       if (parsed.baseUrl() != null && !parsed.baseUrl().isBlank()) {
         baseUrlField.setText(parsed.baseUrl());
       }
@@ -729,7 +814,6 @@ https://github.com/afandiyevm/Swagger2Sqlmap
       req = req.withAddedHeader("Authorization", "Bearer " + token);
     }
 
-    // BODY + Content-Type (если parser даёт template)
     if (r.bodyTemplate() != null && !r.bodyTemplate().isBlank()) {
       String ct = safe(r.contentType()).trim();
       if (ct.isEmpty()) ct = "application/json";
@@ -749,7 +833,6 @@ https://github.com/afandiyevm/Swagger2Sqlmap
       String p = (path == null ? "" : path.trim());
       if (!p.startsWith("/")) p = "/" + p;
 
-      // {id} -> 1 for valid URL preview
       p = p.replaceAll("\\{[^/]+}", "1");
 
       return new URI(b + p).toString();
