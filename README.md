@@ -22,7 +22,7 @@ When testing APIs for SQL injection, penetration testers often face these issues
 
 ---
 
-## Main Features (sqlmap-focused)
+## Main Features 
 
 ### 🔹 Swagger → SQLi Pipeline
 - Load Swagger / OpenAPI JSON
@@ -81,7 +81,7 @@ Each script:
 
 ---
 
-## Typical Workflow (sqlmap-centric)
+## Typical Workflow 
 
 1️⃣ Load Swagger file  
 2️⃣ Review generated endpoints  
