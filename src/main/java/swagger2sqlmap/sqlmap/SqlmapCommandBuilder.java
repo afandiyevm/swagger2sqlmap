@@ -78,7 +78,6 @@ public final class SqlmapCommandBuilder {
       args.add(String.valueOf(opt.threads()));
     }
 
-    // ✅ force SSL
     if (opt.forceSsl()) {
       args.add("--force-ssl");
     }
@@ -200,7 +199,7 @@ public final class SqlmapCommandBuilder {
       String tamper,
       String technique,
       String extraArgs,
-      boolean forceSsl               // ✅ NEW FIELD
+      boolean forceSsl            
   ) {
     public enum HeadersMode { IMPORTANT_ONLY, ALL }
 
