@@ -7,7 +7,7 @@ Its main goal is to make **SQL injection testing of APIs fast, structured, and s
 
 ---
 
-## What Problem Does This Solve?
+# What Problem Does This Solve?
 
 When testing APIs for SQL injection, penetration testers often face these issues:
 
@@ -22,78 +22,110 @@ When testing APIs for SQL injection, penetration testers often face these issues
 
 ---
 
-## Main Features 
+# Who is this for?
 
-### 🔹 Swagger → SQLi Pipeline
-- Load Swagger / OpenAPI JSON
-- Extract all endpoints relevant for injection testing
-- Generate real HTTP requests suitable for sqlmap
+- API penetration testers
+- Red teamers
+- Bug bounty hunters
+- Anyone doing SQL injection testing on APIs
 
-### 🔹 Full HTTP Request Generation
-For each endpoint:
-- Method (GET / POST / PUT / DELETE)
-- Query parameters
-- Headers
-- JSON body (auto-generated from schema when available)
-- Correct data types (numbers, booleans, strings)
+---
+# Key features
+- Import and parse Swagger / OpenAPI (v2 & v3) specifications
+- Automatic request body templating based on schema types
+- Build ready-to-use sqlmap commands per endpoint
+- Full control over sqlmap options (Level, risk, threads, batch, random User-Agent, Force SSL, tamper)
+- Export automation scripts for sqlmap execution (options: `.sh`, `.py`, `.ps1`)
+- Bulk sqlmap execution across all imported endpoints
 
-### 🔹 Burp-style Request Editor
-- Dedicated **Request tab** (similar to Repeater)
-- Views:
-  - Pretty
-  - Raw
-  - Hex
-- Fully editable
-- Resizable request editor
-
-### 🔹 Authorization Support
-Dedicated **Authorization tab**:
-- Insert token from clipboard
-- Load authorization headers from Burp History
-- Automatically applied to all generated requests
-
-### 🔹 SQLmap Command Builder
-Dedicated **Command Builder tab**:
-- Generates sqlmap commands from selected endpoints
-- Includes:
-  - URL
-  - Headers
-  - Cookies
-  - Request body
-- Designed for direct sqlmap execution
-
-### 🔹 Bulk sqlmap Script Export
-Generate scripts to run sqlmap against **all endpoints**:
-- Bash (`.sh`)
-- PowerShell (`.ps1`)
-- Python (`.py`)
-
-Each script:
-- Iterates over endpoints
-- Executes sqlmap per request
-- Preserves headers and bodies
+# Usage instructions
+### 1. Import Swagger / OpenAPI
+1. Open the **Targets** tab
+2. Click **Import**
+3. Select a Swagger / OpenAPI file
+4. Click **Load** to populate endpoints
+The base URL is detected automatically and can be edited.
 ---
 
-### 🔹 Logs Tab
-- Parsing status
-- Request generation info
-- Export results
+### 2. Authorization
+1. Open the **Authorization** tab
+2. Provide a Bearer token via:
+   * Clipboard
+   * Burp Proxy history
+   * Manual input
+
+**The token is applied automatically to all requests and sqlmap commands.**
 
 ---
 
-## Typical Workflow 
+### 3. SQLmap Command Builder
+1. Select an endpoint in **Targets**
+2. Open **Command Builder**
+3. Configure options:
+   * Level
+   * Risk
+   * Threads
+   * Batch mode
+   * Random User-Agent
+   * Force SSL
+   * Header inclusion mode
+   * Extra sqlmap arguments
+Click **Build command** to generate a ready-to-run sqlmap command.
+---
+### 4. Tamper Scripts
+* Select **multiple tampers** simultaneously
+* Supported built-in tampers:
+  * `apostrophemask`
+  * `between`
+  * `space2comment`
+  * `randomcase`
+  * `charunicodeencode`
+* Use **Add custom** to define additional tampers
 
-1️⃣ Load Swagger file  
-2️⃣ Review generated endpoints  
-3️⃣ Verify / adjust request bodies  
-4️⃣ Add authorization  
-5️⃣ Generate sqlmap commands or scripts  
-6️⃣ Run sqlmap externally  
+The extension automatically builds:
+```bash
+--tamper=tamper1,tamper2,tamper3
+```
+
+---
+### 5. Export Automation Scripts
+
+1. Click **Export**
+2. Choose format:
+
+   * `.sh`
+   * `.py`
+   * `.ps1`
+
+The generated script runs sqlmap against **all loaded endpoints** with consistent options.
+
+---
+### 6. Run the generated script:
+```bash
+bash swagger2sqlmap.sh
+```
+or
+```bash
+python3 swagger2sqlmap.py
+```
+or
+```powershell
+.\swagger2sqlmap.ps1
+```
 
 ---
 
-## Example Use Case
+# Typical Workflow 
 
+1. Load Swagger file
+2. Review generated endpoints
+3. Verify / adjust request bodies
+4. Add authorization
+5. Generate sqlmap commands or scripts
+6. Run sqlmap externally  
+
+---
+# Example Use Case
 - API has 120 endpoints
 - Swagger file is provided
 - You need **systematic SQL injection coverage**
@@ -105,37 +137,11 @@ With Swagger2Sqlmap:
 - Clean sqlmap execution per endpoint
 
 ---
-
-## How to Build & Load
-
-```bash
-./gradlew clean jar
-```
-
-Then load the JAR in Burp Suite:
-Extensions → Installed → Add
-Type: Java
-Select the generated JAR
-
----
-
-## Who is this for?
-
-- API penetration testers
-- Red teamers
-- Bug bounty hunters
-- Anyone doing SQL injection testing on APIs
-
----
-
-## Authors
+# Authors
 - Farkhad Askarov
 - Murad Afandiyev
 
-## Version
-v0.1.0
-
-## Disclaimer
-
+---
+# Disclaimer
 This tool is intended only for authorized security testing.
 The authors take no responsibility for misuse.
