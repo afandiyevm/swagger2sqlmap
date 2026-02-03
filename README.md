@@ -6,6 +6,13 @@
 Its main goal is to make **SQL injection testing of APIs fast, structured, and scalable** by automatically converting Swagger definitions into **real HTTP requests and sqlmap commands/scripts**.
 
 ---
+# Demo Screenshots
+<img width="1914" height="952" alt="Screenshot 2026-02-02 at 16 17 02" src="https://github.com/user-attachments/assets/b1703737-6ee2-4373-90fa-12ee0a46d359" />
+<img width="1917" height="952" alt="Screenshot 2026-02-02 at 16 17 22" src="https://github.com/user-attachments/assets/6e789f20-dad7-4045-8bb5-8bdd0972dcd2" />
+<img width="1914" height="954" alt="Screenshot 2026-02-02 at 16 18 07" src="https://github.com/user-attachments/assets/33a88f2b-fced-47b0-a744-677f3905c0c6" />
+<img width="1913" height="951" alt="Screenshot 2026-02-02 at 16 18 35" src="https://github.com/user-attachments/assets/1df4738e-110e-4bf1-975c-5930909a820b" />
+
+---
 
 # What Problem Does This Solve?
 
@@ -19,13 +26,6 @@ When testing APIs for SQL injection, penetration testers often face these issues
 **Swagger2Sqlmap exists to solve exactly this.**
 
 > It turns Swagger files into **sqlmap-ready HTTP requests**, inside Burp Suite.
----
-# Demo Screenshots
-<img width="1914" height="952" alt="Screenshot 2026-02-02 at 16 17 02" src="https://github.com/user-attachments/assets/b1703737-6ee2-4373-90fa-12ee0a46d359" />
-<img width="1917" height="952" alt="Screenshot 2026-02-02 at 16 17 22" src="https://github.com/user-attachments/assets/6e789f20-dad7-4045-8bb5-8bdd0972dcd2" />
-<img width="1914" height="954" alt="Screenshot 2026-02-02 at 16 18 07" src="https://github.com/user-attachments/assets/33a88f2b-fced-47b0-a744-677f3905c0c6" />
-<img width="1913" height="951" alt="Screenshot 2026-02-02 at 16 18 35" src="https://github.com/user-attachments/assets/1df4738e-110e-4bf1-975c-5930909a820b" />
-
 ---
 
 # Who is this for?
